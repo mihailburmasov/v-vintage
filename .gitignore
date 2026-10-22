@@ -1,0 +1,8 @@
+node_modules/
+_source/
+dist/
+HANDOFF.md
+php/api/config.local.php
+php/api/data/
+*.log
+.DS_Store

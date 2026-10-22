@@ -1,0 +1,17 @@
+{
+  "name": "v-vintage",
+  "version": "1.0.0",
+  "description": "Сайт студии аквадизайна V-Vintage (v-vintage.ru)",
+  "scripts": {
+    "images": "node tools/images.mjs",
+    "build": "node src/build.mjs",
+    "build:prod": "node tools/build-prod.mjs",
+    "serve": "node tools/serve.mjs docs 8090",
+    "test": "node tools/test-redirects.mjs"
+  },
+  "type": "module",
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  },
+  "private": true
+}

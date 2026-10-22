@@ -1,0 +1,3 @@
+# Превью на GitHub Pages — закрыто от индексации, чтобы не дублировать v-vintage.ru
+User-agent: *
+Disallow: /

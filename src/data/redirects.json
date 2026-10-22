@@ -1,0 +1,41 @@
+{
+  "_comment": "301-редиректы со старого WordPress (v-vintage.ru/?page_id=N) на новые адреса. Сохраняют накопленный вес страниц в Яндексе. Из этого файла собираются .htaccess и index.php (фолбэк без mod_rewrite). Каждая старая страница ведёт на ближайшую по смыслу новую, а не на главную.",
+  "page_id": {
+    "8": "/o-studii/",
+    "10": "/galereya/",
+    "13": "/kontakty/",
+    "15": "/uslugi/",
+    "21": "/interer/",
+    "41": "/dekor/",
+    "43": "/dekor/fony-dlya-akvariuma/",
+    "46": "/dekor/fony-dlya-terrariuma/",
+    "48": "/dekor/iskusstvennyj-kamen/",
+    "52": "/uslugi/paludariumy/",
+    "54": "/uslugi/terrariumy/",
+    "56": "/uslugi/presnovodnye-akvariumy/",
+    "58": "/uslugi/morskie-akvariumy/",
+    "60": "/uslugi/rifovye-akvariumy/",
+    "77": "/galereya/akvariumy/",
+    "79": "/galereya/paludariumy/",
+    "81": "/galereya/terrariumy/",
+    "83": "/galereya/landshaft-i-vodoemy/",
+    "85": "/galereya/presnovodnye-akvariumy/",
+    "87": "/galereya/morskie-akvariumy/",
+    "115": "/galereya/rifovye-akvariumy/",
+    "190": "/galereya/zimnie-sady/",
+    "192": "/uslugi/zimnie-sady-i-landshaft/",
+    "194": "/interer/",
+    "196": "/galereya/interer/",
+    "311": "/galereya/fony-dlya-akvariuma/",
+    "688": "/galereya/torgovye-akvariumy/",
+    "692": "/galereya/torgovye-akvariumy/",
+    "694": "/galereya/torgovye-akvariumy/"
+  },
+  "p": { "1": "/" },
+  "otherQuery": ["feed", "attachment_id", "cat", "m", "author", "s", "rest_route", "paged"],
+  "paths": {
+    "/wp-login.php": "/",
+    "/wp-admin/": "/",
+    "/xmlrpc.php": "/"
+  }
+}
