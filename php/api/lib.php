@@ -42,27 +42,50 @@ function vv_str($v, $max = 500) {
 
 function vv_phone_ok($p) { return strlen(preg_replace('/\D/', '', $p)) >= 10; }
 
+// Где хранить заказы и логи (персональные данные!):
+// 1) config 'data_dir'; 2) папка v-vintage-data рядом с корнем сайта (вне доступа из веба);
+// 3) иначе api/data. В любом случае файлы — .php со строкой-заглушкой VV_GUARD (exit) в начале,
+// поэтому даже без .htaccess прямой запрос к ним ничего не покажет.
+define('VV_GUARD', "<?php exit; ?>\n");
+function vv_data_base() {
+    static $base = null;
+    if ($base !== null) return $base;
+    $cfg = vv_config();
+    $cands = array();
+    if (!empty($cfg['data_dir'])) $cands[] = $cfg['data_dir'];
+    $root = !empty($_SERVER['DOCUMENT_ROOT']) ? realpath($_SERVER['DOCUMENT_ROOT']) : realpath(__DIR__ . '/..');
+    if ($root) $cands[] = dirname($root) . '/v-vintage-data';
+    $cands[] = __DIR__ . '/data';
+    foreach ($cands as $c) {
+        if ((is_dir($c) || @mkdir($c, 0750, true)) && is_writable($c)) { $base = $c; break; }
+    }
+    if ($base === null) $base = __DIR__ . '/data';
+    if (strpos(realpath($base) ?: $base, realpath(__DIR__)) === 0 && !is_file($base . '/.htaccess')) @file_put_contents($base . '/.htaccess', "Require all denied\nDeny from all\n");
+    return $base;
+}
 function vv_data_dir($sub) {
-    $dir = __DIR__ . '/data/' . $sub;
+    $dir = vv_data_base() . '/' . $sub;
     if (!is_dir($dir)) @mkdir($dir, 0750, true);
-    $ht = __DIR__ . '/data/.htaccess';
-    if (!is_file($ht)) @file_put_contents($ht, "Require all denied\nDeny from all\n");
     return $dir;
 }
+function vv_guard_read($f) { return is_file($f) ? (string)substr((string)@file_get_contents($f), strlen(VV_GUARD)) : ''; }
+function vv_guard_write($f, $content) { return @file_put_contents($f, VV_GUARD . $content, LOCK_EX); }
 
 function vv_log($file, $line) {
-    @file_put_contents(vv_data_dir('logs') . '/' . $file, date('c') . ' ' . $line . "\n", FILE_APPEND | LOCK_EX);
+    $f = vv_data_dir('logs') . '/' . basename($file) . '.php';
+    if (!is_file($f)) @file_put_contents($f, VV_GUARD, LOCK_EX);
+    @file_put_contents($f, date('c') . ' ' . $line . "\n", FILE_APPEND | LOCK_EX);
 }
 
 // Простое ограничение частоты: не больше $max запросов с IP за $sec секунд
 function vv_rate_limit($key, $max = 8, $sec = 600) {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
-    $f = vv_data_dir('rate') . '/' . md5($key . $ip);
+    $f = vv_data_dir('rate') . '/' . md5($key . $ip) . '.php';
     $now = time();
-    $hits = is_file($f) ? array_filter(explode(',', (string)@file_get_contents($f)), function ($t) use ($now, $sec) { return $t && $now - (int)$t < $sec; }) : array();
+    $hits = array_filter(explode(',', vv_guard_read($f)), function ($t) use ($now, $sec) { return $t && $now - (int)$t < $sec; });
     if (count($hits) >= $max) vv_json(array('ok' => false, 'error' => 'Слишком много запросов, попробуйте позже.'), 429);
     $hits[] = $now;
-    @file_put_contents($f, implode(',', $hits), LOCK_EX);
+    vv_guard_write($f, implode(',', $hits));
 }
 
 function vv_mail($subject, $text) {
@@ -120,10 +143,10 @@ function vv_product($slug) {
 }
 // Предмет расчёта для чека 54-ФЗ: услуга или товар
 function vv_is_service($slug) { $p = vv_product($slug); return $p && $p['cat'] === 'uslugi'; }
-function vv_order_path($id) { return vv_data_dir('orders') . '/' . preg_replace('/[^A-Z0-9-]/', '', $id) . '.json'; }
-function vv_order_load($id) { $f = vv_order_path($id); return is_file($f) ? json_decode(file_get_contents($f), true) : null; }
-function vv_order_save($o) { file_put_contents(vv_order_path($o['id']), json_encode($o, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX); }
-function vv_order_id() { return 'VV-' . date('ymd') . '-' . strtoupper(substr(bin2hex(function_exists('random_bytes') ? random_bytes(3) : uniqid()), 0, 5)); }
+function vv_order_path($id) { return vv_data_dir('orders') . '/' . preg_replace('/[^A-Z0-9-]/', '', $id) . '.json.php'; }
+function vv_order_load($id) { $f = vv_order_path($id); return is_file($f) ? json_decode(vv_guard_read($f), true) : null; }
+function vv_order_save($o) { vv_guard_write(vv_order_path($o['id']), json_encode($o, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)); }
+function vv_order_id() { return 'VV-' . date('ymd') . '-' . strtoupper(substr(bin2hex(function_exists('random_bytes') ? random_bytes(4) : uniqid()), 0, 8)); }
 
 function vv_order_text($o) {
     $lines = array();

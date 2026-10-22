@@ -24,7 +24,9 @@ const pages = [
 ];
 
 for (const p of pages) {
-  const file = p.file ? path.join(OUT, p.file) : path.join(OUT, p.path, 'index.html');
+  // В боевой сборке главную отдаёт только index.php (там же 301 со старых ?page_id=N):
+  // если сервер не читает .htaccess и предпочитает index.html, редиректы всё равно сработают
+  const file = p.file ? path.join(OUT, p.file) : MODE === 'prod' && p.path === '/' ? path.join(OUT, '_home.html') : path.join(OUT, p.path, 'index.html');
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, layout(p));
 }
@@ -59,8 +61,11 @@ fs.writeFileSync(path.join(OUT, 'robots.txt'), MODE === 'prod'
 // цели абсолютные (https, без www) — чтобы http/www-запросы старых адресов шли одним прыжком
 const H = company.domain;
 const rules = [];
-for (const [id, to] of Object.entries(redirects.page_id)) rules.push(`RewriteCond %{QUERY_STRING} (^|&)page_id=${id}(&|$) [NC]\nRewriteRule ^(index\\.php)?$ ${H}${to}? [R=301,L]`);
+for (const [id, to] of Object.entries(redirects.page_id)) rules.push(`RewriteCond %{QUERY_STRING} (^|&)(page_id|p)=${id}(&|$) [NC]\nRewriteRule ^(index\\.php)?$ ${H}${to}? [R=301,L]`);
 for (const [id, to] of Object.entries(redirects.p)) rules.push(`RewriteCond %{QUERY_STRING} (^|&)p=${id}(&|$) [NC]\nRewriteRule ^(index\\.php)?$ ${H}${to}? [R=301,L]`);
+// страницы отдельных фото (?attachment_id=N и ?p=N, который WordPress сам уводил на attachment_id)
+for (const [id, to] of Object.entries(redirects.attachment_id || {})) rules.push(`RewriteCond %{QUERY_STRING} (^|&)(attachment_id|p)=${id}(&|$) [NC]\nRewriteRule ^(index\\.php)?$ ${H}${to}? [R=301,L]`);
+rules.push(`RewriteCond %{QUERY_STRING} (^|&)attachment_id= [NC]\nRewriteRule ^(index\\.php)?$ ${H}${redirects.attachmentDefault}? [R=301,L]`);
 rules.push(`RewriteCond %{QUERY_STRING} (^|&)(page_id|${redirects.otherQuery.join('|')})= [NC]\nRewriteRule ^(index\\.php)?$ ${H}/? [R=301,L]`);
 for (const [from, to] of Object.entries(redirects.paths)) rules.push(`RewriteRule ^${from.replace(/^\//, '').replace(/\./g, '\\.').replace(/\/$/, '(/.*)?')}$ ${H}${to} [R=301,L]`);
 // старые картинки /wp-content/uploads/... (в т.ч. миниатюры -150x150) → новые webp; только латинские имена
@@ -76,7 +81,6 @@ const htaccess = `# Сгенерировано src/build.mjs — не прави
 AddDefaultCharset UTF-8
 DirectoryIndex index.php index.html
 ErrorDocument 404 /404.html
-Options -Indexes
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
@@ -95,8 +99,10 @@ RewriteCond %{HTTPS} off
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule ^(.*)$ https://v-vintage.ru/$1 [R=301,L]
 
-# Служебные файлы данных
-RewriteRule ^api/(data|lib)/ - [F,L]
+# Служебные файлы: данные API и прямой адрес шаблона главной
+RewriteRule ^api/(data|lib|payments)/ - [F,L]
+RewriteRule ^api/(lib|config\\.[a-z.]+)\\.php$ - [F,L]
+RewriteRule ^_home\\.html$ https://v-vintage.ru/ [R=301,L]
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -124,14 +130,16 @@ const indexPhp = `<?php
 // v-vintage.ru/?page_id=N всё равно получат 301 на новые страницы.
 $map = json_decode('${phpMap}', true);
 $p = json_decode('${JSON.stringify(redirects.p)}', true);
+$att = json_decode('${JSON.stringify(redirects.attachment_id || {})}', true);
 $to = null;
 if (isset($_GET['page_id']) && isset($map[(string)(int)$_GET['page_id']])) $to = $map[(string)(int)$_GET['page_id']];
 elseif (isset($_GET['page_id'])) $to = '/';
-elseif (isset($_GET['p'])) $to = isset($p[(string)(int)$_GET['p']]) ? $p[(string)(int)$_GET['p']] : '/';
+elseif (isset($_GET['attachment_id'])) $to = isset($att[(string)(int)$_GET['attachment_id']]) ? $att[(string)(int)$_GET['attachment_id']] : '${redirects.attachmentDefault}';
+elseif (isset($_GET['p'])) { $k = (string)(int)$_GET['p']; $to = isset($p[$k]) ? $p[$k] : (isset($map[$k]) ? $map[$k] : (isset($att[$k]) ? $att[$k] : '/')); }
 else { foreach (${JSON.stringify(redirects.otherQuery).replace(/"/g, "'").replace('[', 'array(').replace(']', ')')} as $k) { if (isset($_GET[$k])) { $to = '/'; break; } } }
 if ($to !== null) { header('Location: https://v-vintage.ru' . $to, true, 301); exit; }
 header('Content-Type: text/html; charset=utf-8');
-readfile(__DIR__ . '/index.html');
+readfile(__DIR__ . '/_home.html');
 `;
 
 if (MODE === 'prod') {

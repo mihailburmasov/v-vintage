@@ -12,7 +12,8 @@ let fail = 0;
 const ok = (c, m) => { if (!c) { fail++; console.log('  ✗ ' + m); } };
 
 console.log('1. Цели редиректов существуют');
-for (const [id, to] of Object.entries(R.page_id)) ok(fs.existsSync(`dist${to}index.html`), `?page_id=${id} → ${to}: нет dist${to}index.html`);
+const pageFile = to => to === '/' ? 'dist/_home.html' : `dist${to}index.html`; // главную отдаёт index.php
+for (const [id, to] of Object.entries(R.page_id)) ok(fs.existsSync(pageFile(to)), `?page_id=${id} → ${to}: нет ${pageFile(to)}`);
 
 console.log('2. Эмуляция .htaccess');
 const ht = fs.readFileSync('dist/.htaccess', 'utf8').split('\n');
@@ -39,6 +40,10 @@ for (const [id, to] of Object.entries(R.page_id)) {
   ok(rewrite('index.php', `page_id=${id}&foo=1`) === H + to, `/index.php?page_id=${id}&foo=1`);
 }
 ok(rewrite('', 'p=1') === H + '/', '?p=1');
+ok(rewrite('', 'p=58') === H + R.page_id['58'], '?p=58 (WordPress уводил на page_id)');
+for (const [id, to] of Object.entries(R.attachment_id)) { ok(rewrite('', 'attachment_id=' + id) === H + to, 'attachment_id=' + id); ok(fs.existsSync('dist' + to + 'index.html'), 'цель вложения ' + to); }
+ok(rewrite('', 'attachment_id=999999') === H + R.attachmentDefault, 'неизвестное вложение → галерея');
+ok(rewrite('', 'galleries=news') === H + '/', '?galleries=news');
 ok(rewrite('', 'feed=rss2') === H + '/', '?feed=rss2');
 ok(rewrite('', 'page_id=99999') === H + '/', 'неизвестный page_id → главная');
 ok(rewrite('', '') === null, 'главная без параметров не редиректится');
@@ -58,7 +63,25 @@ for (const [old] of Object.entries(imgs)) {
 }
 console.log(`   проверено ${n} адресов картинок`);
 
-console.log('4. PHP-фолбэк (php -S)');
+console.log('4. Боевая сборка индексируется и не тянет превью');
+ok(!fs.existsSync('dist/index.html') && fs.existsSync('dist/_home.html'), 'главная — только через index.php (_home.html), без dist/index.html');
+ok(!/Disallow: \/\s*$/m.test(fs.readFileSync('dist/robots.txt', 'utf8')), 'robots.txt не закрывает сайт');
+const sm = [...fs.readFileSync('dist/sitemap.xml', 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+ok(sm.length > 40, 'в sitemap ' + sm.length + ' адресов');
+for (const loc of sm) {
+  const p = loc.replace(H, '');
+  const f = p === '/' ? 'dist/_home.html' : 'dist' + p + 'index.html';
+  if (!fs.existsSync(f)) { ok(false, 'нет файла для ' + loc); continue; }
+  const html = fs.readFileSync(f, 'utf8');
+  ok(!/name="robots"/.test(html), 'noindex на ' + p);
+  ok(html.includes('<link rel="canonical" href="' + loc + '">'), 'canonical на ' + p);
+  ok(!html.includes('/v-vintage/'), 'ссылки превью (/v-vintage/) на ' + p);
+}
+ok(fs.readFileSync('dist/_home.html', 'utf8').includes('ym(37945335,"init"'), 'Метрика 37945335 на главной');
+
+console.log('5. PHP-фолбэк и API (php -S = сервер без .htaccess)');
+// худший случай: данные внутри корня сайта
+fs.writeFileSync('dist/api/config.local.php', "<?php return array('data_dir' => __DIR__ . '/data');");
 const php = spawn('php', ['-S', '127.0.0.1:8099', '-t', 'dist'], { stdio: 'ignore' });
 await new Promise(r => setTimeout(r, 1200));
 try {
@@ -66,6 +89,8 @@ try {
     const res = await fetch(`http://127.0.0.1:8099/?page_id=${id}`, { redirect: 'manual' });
     ok(res.status === 301 && res.headers.get('location') === H + to, `php ?page_id=${id}: ${res.status} ${res.headers.get('location')}`);
   }
+  for (const id of Object.keys(R.attachment_id).slice(0, 40)) { const res = await fetch('http://127.0.0.1:8099/?attachment_id=' + id, { redirect: 'manual' }); ok(res.headers.get('location') === H + R.attachment_id[id], 'php attachment_id=' + id); }
+  const p58 = await fetch('http://127.0.0.1:8099/?p=58', { redirect: 'manual' }); ok(p58.headers.get('location') === H + R.page_id['58'], 'php ?p=58');
   const home = await fetch('http://127.0.0.1:8099/');
   ok(home.status === 200 && (await home.text()).includes('Аквариумы и&nbsp;террариумы'), 'главная отдаётся через index.php');
   const lead = await fetch('http://127.0.0.1:8099/api/lead.php', { method: 'POST', body: JSON.stringify({ name: 'Тест', phone: '+7 978 000-00-00', consent: '1', topic: 'test' }) });
@@ -79,9 +104,15 @@ try {
   ok(oj.ok && /^VV-/.test(oj.id) && !oj.payUrl, 'api/order.php создаёт заказ без оплаты при цене «по запросу»: ' + JSON.stringify(oj));
   const st = await (await fetch('http://127.0.0.1:8099/api/order-status.php?id=' + oj.id)).json();
   ok(st.status === 'new', 'order-status.php: ' + JSON.stringify(st));
+  for (const leak of ['/api/data/logs/leads.log.php', '/api/data/logs/orders.log.php', '/api/data/orders/' + oj.id + '.json.php', '/api/products.json']) {
+    const r = await fetch('http://127.0.0.1:8099' + leak); const body = await r.text();
+    if (leak.endsWith('products.json')) continue;
+    ok(!body.includes('Тест') && !body.includes('78000'), 'утечка персональных данных: ' + leak + ' → ' + r.status + ' ' + body.slice(0, 60));
+  }
+  ok(fs.existsSync('dist/api/data/orders/' + oj.id + '.json.php'), 'заказ сохранён');
   const sec = await fetch('http://127.0.0.1:8099/api/lib.php');
   ok((await sec.text()).length < 5, 'lib.php не отдаёт ничего при прямом вызове');
-} finally { php.kill(); fs.rmSync('dist/api/data', { recursive: true, force: true }); }
+} finally { php.kill(); fs.rmSync('dist/api/data', { recursive: true, force: true }); fs.rmSync('dist/api/config.local.php', { force: true }); fs.rmSync('v-vintage-data', { recursive: true, force: true }); }
 
 console.log(fail ? `\nОШИБОК: ${fail}` : '\nВсё в порядке');
 process.exit(fail ? 1 : 0);

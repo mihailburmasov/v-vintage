@@ -6,3 +6,4 @@ php/api/config.local.php
 php/api/data/
 *.log
 .DS_Store
+v-vintage-data/
