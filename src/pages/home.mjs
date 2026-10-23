@@ -41,11 +41,14 @@ export default function home() {
   const fony = gal('fony-dlya-akvariuma');
   const series = [['A', 'Скалы', 9], ['B', 'Слоистый камень', 55], ['C', 'Валуны', 72], ['D', 'Пористый камень и коряга', 87], ['G', 'Корни', 95]];
   const heroPics = [mor[34], presn[46], ter[20]];
+  // фон первого экрана на телефоне: <source> только для узких экранов, на компьютере не грузится
+  const heroPhone = mor.find(p => p.id.startsWith('hotel-h2o'));
 
   const body = `
 <section class="hero" data-hero>
   <canvas class="hero__gl" data-caustics="hero" aria-hidden="true"></canvas>
   <div class="hero__rays" aria-hidden="true"></div>
+  ${heroPhone ? `<picture class="hero__photo" aria-hidden="true"><source media="(max-width: 640px)" srcset="${imgSrc(heroPhone.id, 1000)}"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" fetchpriority="high" decoding="async"></picture>` : ''}
   <div class="hero__bubbles" data-bubbles aria-hidden="true"></div>
   <div class="wrap hero__inner">
     <div class="hero__copy">
