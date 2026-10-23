@@ -49,9 +49,12 @@ export function shopIndex() {
   };
 }
 
+// вариант с картинкой: o.img[i] — номер фото товара, при выборе оно встаёт главным
+const optImg = (o, i, p) => { const m = o.img && o.img[i] != null && productImages(p)[o.img[i]]; return m ? ` data-img="${imgSrc(m.id)}"` : ''; };
+
 function optionField(o, p) {
   const name = `opt-${o.id}`;
-  if (o.type === 'select') return `<fieldset class="opt"><legend>${esc(o.label)}</legend><div class="opt__pills">${o.values.map((v, i) => `<label class="pill"><input type="radio" name="${name}" value="${esc(v)}" ${i === 0 ? 'checked' : ''} data-opt="${o.id}" data-label="${esc(o.label)}"><span>${esc(v)}</span></label>`).join('')}</div></fieldset>`;
+  if (o.type === 'select') return `<fieldset class="opt"><legend>${esc(o.label)}</legend><div class="opt__pills">${o.values.map((v, i) => `<label class="pill"><input type="radio" name="${name}" value="${esc(v)}" ${i === 0 ? 'checked' : ''} data-opt="${o.id}" data-label="${esc(o.label)}"${optImg(o, i, p)}><span>${esc(v)}</span></label>`).join('')}</div></fieldset>`;
   if (o.type === 'dims2' || o.type === 'dims3') {
     const f = o.type === 'dims3' ? [['l', 'Длина'], ['w', 'Ширина'], ['h', 'Высота']] : [['w', 'Ширина'], ['h', 'Высота']];
     return `<fieldset class="opt" data-dims="${o.id}" data-label="${esc(o.label)}"><legend>${esc(o.label)}</legend><div class="opt__dims">${f.map(([k, t]) => `<label class="dim"><span>${t}</span><input type="number" inputmode="numeric" min="10" max="1000" step="1" name="${o.id}-${k}" placeholder="см"></label>`).join('<i>×</i>')}</div><p class="opt__hint">Можно не заполнять — уточним при подтверждении заказа.</p></fieldset>`;

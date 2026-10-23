@@ -31,13 +31,17 @@
     main.style.opacity = .3;
     var im = new Image(); im.onload = function () { main.removeAttribute('srcset'); main.src = src; main.style.opacity = 1; }; im.src = src;
     mainA.href = src;
+    $$('.product__thumb').forEach(function (x) { x.classList.toggle('is-on', x.dataset.src === src); });
   }
   $$('.product__thumb').forEach(function (b) {
     b.addEventListener('click', function () { $$('.product__thumb').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on'); showImg(b.dataset.src); });
   });
   form.addEventListener('change', function (e) {
-    if (e.target.dataset.img) { showImg(e.target.dataset.img); var o = $('[data-model-out]'); if (o) o.textContent = e.target.value; }
+    if (e.target.dataset.img) { showImg(e.target.dataset.img); var o = e.target.closest('.models') && $('[data-model-out]'); if (o) o.textContent = e.target.value; }
   });
+  // фото должно совпадать с вариантом, выбранным по умолчанию
+  var picked = $('input[data-img]:checked', form);
+  if (picked && main && main.getAttribute('src') !== picked.dataset.img) showImg(picked.dataset.img);
   var qty = form.qty;
   $$('[data-qty]', form).forEach(function (b) { b.addEventListener('click', function () { qty.value = Math.max(1, Math.min(99, (+qty.value || 1) + (+b.dataset.qty))); }); });
 
