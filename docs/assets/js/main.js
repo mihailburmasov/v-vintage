@@ -104,7 +104,8 @@
   }
 
   // ---------- Каустика (WebGL): световые блики, как на дне ----------
-  var FRAG = 'precision mediump float;uniform float t;uniform vec2 r;uniform vec2 m;uniform float q;' +
+  // highp обязателен: в mediump (16 бит на мобильных GPU) координаты около -250 идут ступеньками — картинка распадается на квадраты
+  var FRAG = '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\nuniform float t;uniform vec2 r;uniform vec2 m;uniform float q;' +
     'float c(vec2 p){vec2 i=p;float v=1.;float k=.005;for(int n=0;n<4;n++){float tt=t*(1.-(3.5/float(n+1)));i=p+vec2(cos(tt-i.x)+sin(tt+i.y),sin(tt-i.y)+cos(tt+i.x));v+=1./length(vec2(p.x/(sin(i.x+tt)/k),p.y/(cos(i.y+tt)/k)));}v/=4.;v=1.17-pow(v,1.4);return pow(abs(v),8.);}' +
     'void main(){vec2 uv=gl_FragCoord.xy/r;vec2 p=mod(uv*vec2(r.x/r.y,1.)*6.28318*1.3,6.28318)-250.;float v=c(p);' +
     'float d=distance(uv,m);float glow=smoothstep(.45,0.,d)*.35*q;' +
@@ -114,6 +115,8 @@
   function caustics(cv) {
     var gl = cv.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power' });
     if (!gl) return;
+    var hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+    if (!hp || !hp.precision) return; // без highp будут квадраты — остаётся CSS-градиент
     function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
     var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FRAG)); gl.linkProgram(pr);
     if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
