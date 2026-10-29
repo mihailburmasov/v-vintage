@@ -40,7 +40,27 @@ export default function home() {
   ];
   const fony = gal('fony-dlya-akvariuma');
   const series = [['A', 'Скалы', 9], ['B', 'Слоистый камень', 55], ['C', 'Валуны', 72], ['D', 'Пористый камень и коряга', 87], ['G', 'Корни', 95]];
-  const heroPics = [mor[34], presn[46], ter[20]];
+  // Соты первого экрана. Маленькая сота: апофема 1, зазор G, соседи в решётке через 2 + G.
+  // Большая сота (апофема 2 + G/2) стоит в узле решётки и прилегает к шести соседям с тем же зазором.
+  const G = 0.14, D = 2 + G, K = Math.sqrt(3) / 2;
+  const cell = (i, j) => [3 + 1.5 * G + D * (i + j / 2), -1 / Math.sqrt(3) - G / 4 / K + D * K * j];
+  const rif = gal('rifovye-akvariumy');
+  const hive = [
+    { at: [0, 0], big: true, img: mor[3] },
+    { at: cell(0, -1), img: pal[15] },
+    { at: cell(0, 0), img: presn[60] },
+    { at: cell(1, -2), img: rif[0] },
+    { at: cell(0, 1), img: ter[5] },
+    { at: cell(-2, 2), cta: true },
+    { at: cell(-1, 2), kind: 'glass' },
+    { at: cell(-3, 2), kind: 'line' },
+  ];
+  const X0 = -2.07 - G / 2, X1 = cell(0, 1)[0] + 1, Y0 = cell(1, -2)[1] - 1 / K, Y1 = cell(-2, 2)[1] + 1 / K;
+  const W = X1 - X0, H = Y1 - Y0, pct = v => (v * 100).toFixed(3) + '%';
+  const hexStyle = h => { const a = h.big ? 2 + G / 2 : 1; return `left:${pct((h.at[0] - a - X0) / W)};top:${pct((h.at[1] - a / K - Y0) / H)};width:${pct(2 * a / W)}`; };
+  const hex = (h, i) => h.cta
+    ? `<a class="hex hex--cta" href="${url('/galereya/')}" style="${hexStyle(h)}"><span>Смотреть<br>работы</span>${icon('arrow')}</a>`
+    : `<figure class="hex${h.big ? ' hex--big' : ''}${h.kind ? ` hex--${h.kind}` : ''}" style="${hexStyle(h)}" aria-hidden="true">${h.img ? pic(h.img, { sizes: h.big ? '(max-width: 900px) 50vw, 24vw' : '(max-width: 900px) 25vw, 12vw', eager: i === 0, alt: '' }) : ''}</figure>`;
   // фон первого экрана на телефоне: <source> только для узких экранов, на компьютере не грузится
   const heroPhone = mor.find(p => p.id.startsWith('hotel-h2o'));
 
@@ -65,9 +85,9 @@ export default function home() {
         <li><b>8</b><span>городов Крыма с выездом</span></li>
       </ul>
     </div>
-    <div class="hero__stack" data-parallax aria-hidden="true">
-      ${heroPics.map((p, i) => `<figure class="hero__card hero__card--${i}" data-depth-layer="${(i + 1) * 0.6}">${pic(p, { sizes: '(max-width: 900px) 60vw, 28vw', eager: i === 0, alt: '' })}</figure>`).join('')}
-      <div class="hero__glow"></div>
+    <div class="hero__stack" data-parallax>
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="hive" style="aspect-ratio:${(W / H).toFixed(4)}">${hive.map(hex).join('')}</div>
     </div>
   </div>
   <a class="hero__scroll" href="#directions" aria-label="Листать вниз"><span></span></a>

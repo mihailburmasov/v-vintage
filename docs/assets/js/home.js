@@ -33,13 +33,15 @@
     items.forEach(function (it) { var ir = it.getBoundingClientRect(); it.classList.toggle('is-active', ir.top < innerHeight * .62); });
   }
 
-  // Параллакс карточек героя за мышью
+  // Параллакс сот героя за мышью: соты сдвигаются целиком (зазоры не плывут), фото внутри — навстречу
   var stack = $('[data-parallax]');
   if (stack && window.matchMedia('(pointer: fine)').matches && !VV.reduce) {
-    var cards = $$('[data-depth-layer]', stack);
+    var hive = $('.hive', stack);
     $('[data-hero]').addEventListener('pointermove', function (e) {
       var x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
-      cards.forEach(function (c) { var d = +c.dataset.depthLayer; c.style.transform = 'translate3d(' + (-x * 22 * d) + 'px,' + (-y * 22 * d) + 'px,0) rotate(' + (x * 2 * d) + 'deg)'; });
+      hive.style.transform = 'translate3d(' + (-x * 18) + 'px,' + (-y * 18) + 'px,0)';
+      stack.style.setProperty('--px', (x * 16).toFixed(1) + 'px');
+      stack.style.setProperty('--py', (y * 16).toFixed(1) + 'px');
     });
   }
 

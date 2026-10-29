@@ -173,13 +173,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hero__facts li { display: flex; flex-direction: column; max-width: 150px; }
 .hero__facts b { font-family: var(--serif); font-size: 2.3rem; font-weight: 500; color: var(--brass); line-height: 1; }
 .hero__facts span { color: var(--muted); font-size: .85rem; margin-top: 6px; line-height: 1.35; }
-.hero__stack { position: relative; aspect-ratio: .82; max-width: 520px; width: 100%; justify-self: end; }
-.hero__card { position: absolute; margin: 0; border-radius: 22px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .8); transition: transform .9s var(--ease); }
-.hero__card img { width: 100%; height: 100%; object-fit: cover; }
-.hero__card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255, 255, 255, .18), transparent 35%); }
-.hero__card--0 { inset: 0 18% 26% 0; z-index: 2; animation: floaty 9s ease-in-out infinite; }
-.hero__card--1 { width: 52%; aspect-ratio: 1; right: 0; top: 30%; z-index: 3; animation: floaty 11s -3s ease-in-out infinite; }
-.hero__card--2 { width: 44%; aspect-ratio: 1.15; left: 8%; bottom: 0; z-index: 1; animation: floaty 10s -6s ease-in-out infinite; }
+.hero__stack { position: relative; max-width: 500px; width: 100%; justify-self: end; }
+/* соты: геометрия и позиции считаются в home.mjs, здесь только вид */
+.hive { position: relative; z-index: 1; container-type: inline-size; animation: floaty 10s ease-in-out infinite; transition: transform .9s var(--ease); }
+.hex { position: absolute; margin: 0; aspect-ratio: .866; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); overflow: hidden; background: var(--sea); }
+.hex img { width: 100%; height: 100%; object-fit: cover; transform: translate3d(var(--px, 0), var(--py, 0), 0) scale(1.14); transition: transform .9s var(--ease); }
+.hex--big img { transform-origin: 50% 85%; }
+.hex:hover img { transform: translate3d(var(--px, 0), var(--py, 0), 0) scale(1.22); }
+.hex::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(160deg, rgba(255, 255, 255, .2), transparent 38%), linear-gradient(transparent 60%, rgba(3, 20, 26, .35)); }
+.hex--glass { background: rgba(94, 230, 200, .08); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.hex--line { clip-path: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86.6 100'%3E%3Cpolygon points='43.3,1 85.6,25.5 85.6,74.5 43.3,99 1,74.5 1,25.5' fill='none' stroke='%23d4b27a' stroke-opacity='.55' stroke-width='1.5' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+.hex--line::after { content: none; }
+.hex--cta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.4cqi; background: linear-gradient(140deg, #e6c891, var(--brass) 45%, var(--brass-2)); color: #23180a; font-size: 3.2cqi; font-weight: 700; line-height: 1.2; letter-spacing: .14em; text-transform: uppercase; text-align: center; transition: filter .35s; }
+.hex--cta svg { width: 5.5cqi; height: 5.5cqi; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s var(--ease); }
+.hex--cta:hover { filter: brightness(1.1); }
+.hex--cta:hover svg { transform: translateX(4px); }
+.hex--cta:focus-visible { outline: none; background: var(--aqua); }
 @keyframes floaty { 50% { translate: 0 -14px; } }
 .hero__glow { position: absolute; inset: 20%; border-radius: 50%; background: radial-gradient(circle, rgba(94, 230, 200, .35), transparent 70%); filter: blur(40px); z-index: 0; }
 .hero__scroll { position: absolute; left: 50%; bottom: 26px; width: 26px; height: 42px; border: 1.5px solid var(--line); border-radius: 14px; translate: -50% 0; }
@@ -666,7 +675,7 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
   .hero__title { font-size: clamp(2.6rem, 5vw, 4.6rem); margin-bottom: 18px; }
   .hero__lead { margin-bottom: 24px; font-size: 1.05rem; }
   .hero__facts { margin-top: 24px; padding-top: 18px; }
-  .hero__stack { max-width: 440px; }
+  .hero__stack { max-width: 400px; }
 }
 @media (max-width: 640px) {
   .chips { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(var(--pad) * -1); padding: 0 var(--pad) 6px; scrollbar-width: none; }
