@@ -40,27 +40,40 @@ export default function home() {
   ];
   const fony = gal('fony-dlya-akvariuma');
   const series = [['A', 'Скалы', 9], ['B', 'Слоистый камень', 55], ['C', 'Валуны', 72], ['D', 'Пористый камень и коряга', 87], ['G', 'Корни', 95]];
-  // Соты первого экрана. Маленькая сота: апофема 1, зазор G, соседи в решётке через 2 + G.
-  // Большая сота (апофема 2 + G/2) стоит в узле решётки и прилегает к шести соседям с тем же зазором.
-  const G = 0.14, D = 2 + G, K = Math.sqrt(3) / 2;
+  // Соты первого экрана — раскладка по макету клиента. Маленькая сота: апофема 1, зазор G, соседи через 2 + G.
+  // Большая сота (апофема 2 + G/2) стоит в узле решётки и прилегает к соседям с тем же зазором.
+  const G = 0.35, D = 2 + G, K = Math.sqrt(3) / 2, BIG = 2 + G / 2;
   const cell = (i, j) => [3 + 1.5 * G + D * (i + j / 2), -1 / Math.sqrt(3) - G / 4 / K + D * K * j];
+  const node = (i, j, odd) => [D * (i + j / 2) + (odd ? D / 2 : 0), D * K * j + (odd ? D * K / 3 : 0)];
   const rif = gal('rifovye-akvariumy');
   const hive = [
-    { at: [0, 0], big: true, img: mor[3] },
+    { at: node(0, 0), big: true, img: mor[3] },
+    { at: node(3, -3, true), big: true, img: presn[21] },
+    { at: node(2, 1), big: true, img: pal[3], pos: '20% 40%' },
     { at: cell(0, -1), img: pal[15] },
     { at: cell(0, 0), img: presn[60] },
-    { at: cell(1, -2), img: rif[0] },
-    { at: cell(0, 1), img: ter[5] },
-    { at: cell(-2, 2), cta: true },
-    { at: cell(-1, 2), kind: 'glass' },
-    { at: cell(-3, 2), kind: 'line' },
+    { at: cell(-2, 2), img: rif[0] },
+    { at: cell(-1, 1), cta: true },
   ];
-  const X0 = -2.07 - G / 2, X1 = cell(0, 1)[0] + 1, Y0 = cell(1, -2)[1] - 1 / K, Y1 = cell(-2, 2)[1] + 1 / K;
+  // кадр как в макете: большая сота слева целиком, остальные срезаются верхом, правым краем и низом
+  const X0 = -BIG - 0.12, X1 = 5.34, Y0 = -4.74, Y1 = 3.42;
   const W = X1 - X0, H = Y1 - Y0, pct = v => (v * 100).toFixed(3) + '%';
-  const hexStyle = h => { const a = h.big ? 2 + G / 2 : 1; return `left:${pct((h.at[0] - a - X0) / W)};top:${pct((h.at[1] - a / K - Y0) / H)};width:${pct(2 * a / W)}`; };
+  const apo = h => h.big ? BIG : 1;
+  const corners = (c, a) => { const R = a / K; return [[0, -R], [a, -R / 2], [a, R / 2], [0, R], [-a, R / 2], [-a, -R / 2]].map(([x, y]) => [c[0] + x, c[1] + y]); };
+  const overlap = (p, q) => [[1, 0], [.5, K], [-.5, K]].every(([nx, ny]) => Math.abs((q.at[0] - p.at[0]) * nx + (q.at[1] - p.at[1]) * ny) < apo(p) + apo(q) + G - 1e-6);
+  // большую соту, на которую заходит маленькая, вырезаем по контуру маленькой с тем же зазором
+  const notch = h => {
+    const cut = hive.filter(q => !q.big && h.big && overlap(h, q));
+    if (!cut.length) return '';
+    const a = apo(h), o = [h.at[0] - a, h.at[1] - a / K], poly = (pts, fill) => `<polygon fill="${fill}" points="${pts.map(([x, y]) => `${(x - o[0]).toFixed(3)},${(y - o[1]).toFixed(3)}`).join(' ')}"/>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${(2 * a).toFixed(3)} ${(2 * a / K).toFixed(3)}"><mask id="m">${poly(corners(h.at, a), '#fff')}${cut.map(q => poly(corners(q.at, 1 + G), '#000')).join('')}</mask><rect width="100%" height="100%" fill="#fff" mask="url(#m)"/></svg>`;
+    const u = `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
+    return `;clip-path:none;-webkit-mask:${u} center/100% 100%;mask:${u} center/100% 100%`;
+  };
+  const hexStyle = h => { const a = apo(h); return `left:${pct((h.at[0] - a - X0) / W)};top:${pct((h.at[1] - a / K - Y0) / H)};width:${pct(2 * a / W)}${notch(h)}`; };
   const hex = (h, i) => h.cta
-    ? `<a class="hex hex--cta" href="${url('/galereya/')}" style="${hexStyle(h)}"><span>Смотреть<br>работы</span>${icon('arrow')}</a>`
-    : `<figure class="hex${h.big ? ' hex--big' : ''}${h.kind ? ` hex--${h.kind}` : ''}" style="${hexStyle(h)}" aria-hidden="true">${h.img ? pic(h.img, { sizes: h.big ? '(max-width: 900px) 50vw, 24vw' : '(max-width: 900px) 25vw, 12vw', eager: i === 0, alt: '' }) : ''}</figure>`;
+    ? `<a class="hex hex--cta" href="${url('/galereya/')}" style="${hexStyle(h)}">${icon('arrow')}<span>Смотреть<br>работы</span></a>`
+    : `<figure class="hex${h.big ? ' hex--big' : ''}" style="${hexStyle(h)}${h.pos ? `;--pos:${h.pos}` : ''}" aria-hidden="true">${pic(h.img, { sizes: h.big ? '(max-width: 900px) 70vw, 32vw' : '(max-width: 900px) 35vw, 16vw', eager: i === 0, alt: '' })}</figure>`;
   // фон первого экрана на телефоне: <source> только для узких экранов, на компьютере не грузится
   const heroPhone = mor.find(p => p.id.startsWith('hotel-h2o'));
 
@@ -85,9 +98,9 @@ export default function home() {
         <li><b>8</b><span>городов Крыма с выездом</span></li>
       </ul>
     </div>
-    <div class="hero__stack" data-parallax>
+    <div class="hero__stack" data-parallax style="--ar:${(W / H).toFixed(4)}">
       <div class="hero__glow" aria-hidden="true"></div>
-      <div class="hive" style="aspect-ratio:${(W / H).toFixed(4)}">${hive.map(hex).join('')}</div>
+      <div class="hive">${hive.map(hex).join('')}</div>
     </div>
   </div>
   <a class="hero__scroll" href="#directions" aria-label="Листать вниз"><span></span></a>
