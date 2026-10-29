@@ -41,22 +41,22 @@ export default function home() {
   const fony = gal('fony-dlya-akvariuma');
   const series = [['A', 'Скалы', 9], ['B', 'Слоистый камень', 55], ['C', 'Валуны', 72], ['D', 'Пористый камень и коряга', 87], ['G', 'Корни', 95]];
   // Соты первого экрана — раскладка по макету клиента. Маленькая сота: апофема 1, зазор G, соседи через 2 + G.
-  // Большая сота (апофема 2 + G/2) стоит в узле решётки и прилегает к соседям с тем же зазором.
-  const G = 0.35, D = 2 + G, K = Math.sqrt(3) / 2, BIG = 2 + G / 2;
-  const cell = (i, j) => [3 + 1.5 * G + D * (i + j / 2), -1 / Math.sqrt(3) - G / 4 / K + D * K * j];
-  const node = (i, j, odd) => [D * (i + j / 2) + (odd ? D / 2 : 0), D * K * j + (odd ? D * K / 3 : 0)];
+  // Большая сота (апофема 3 + G, втрое шире маленькой) стоит в узле решётки и прилегает к соседям с тем же зазором.
+  const G = 0.12, D = 2 + G, K = Math.sqrt(3) / 2, BIG = 3 + G, V = [D / 2, D * K / 3];
+  const cell = (i, j) => [D * (i + j / 2) - V[0], D * K * j - V[1]];
+  const node = (i, j, odd) => [D * (i + j / 2) + (odd ? V[0] : 0), D * K * j + (odd ? V[1] : 0)];
   const rif = gal('rifovye-akvariumy');
   const hive = [
     { at: node(0, 0), big: true, img: mor[3] },
-    { at: node(3, -3, true), big: true, img: presn[21] },
-    { at: node(2, 1), big: true, img: pal[3], pos: '20% 40%' },
-    { at: cell(0, -1), img: pal[15] },
-    { at: cell(0, 0), img: presn[60] },
-    { at: cell(-2, 2), img: rif[0] },
-    { at: cell(-1, 1), cta: true },
+    { at: node(4, -4, true), big: true, img: presn[21] },
+    { at: node(4, -1, true), big: true, img: pal[3], pos: '20% 40%' },
+    { at: cell(2, -2), img: pal[15] },
+    { at: cell(3, -1), img: presn[60] },
+    { at: cell(2, 1), img: rif[0] },
+    { at: cell(2, 0), cta: true },
   ];
-  // кадр как в макете: большая сота слева целиком, остальные срезаются верхом, правым краем и низом
-  const X0 = -BIG - 0.12, X1 = 5.34, Y0 = -4.74, Y1 = 3.42;
+  // кадр как в макете: большая сота слева целиком, дальние срезаются верхом (он растворяется) и правым краем
+  const X0 = -BIG - 0.1, X1 = 7.9, Y0 = -5.6, Y1 = BIG / K + 0.15;
   const W = X1 - X0, H = Y1 - Y0, pct = v => (v * 100).toFixed(3) + '%';
   const apo = h => h.big ? BIG : 1;
   const corners = (c, a) => { const R = a / K; return [[0, -R], [a, -R / 2], [a, R / 2], [0, R], [-a, R / 2], [-a, -R / 2]].map(([x, y]) => [c[0] + x, c[1] + y]); };

@@ -174,7 +174,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hero__facts b { font-family: var(--serif); font-size: 2.3rem; font-weight: 500; color: var(--brass); line-height: 1; }
 .hero__facts span { color: var(--muted); font-size: .85rem; margin-top: 6px; line-height: 1.35; }
 /* соты по макету: блок прижат к правому краю и низу первого экрана, крайние соты срезаются его краями */
-.hero__stack { position: absolute; right: 0; bottom: 0; z-index: 0; width: min(52vw, 86svh * var(--ar)); aspect-ratio: var(--ar); overflow: hidden; }
+.hero__stack { position: absolute; right: 0; bottom: 0; z-index: 0; width: min(50vw, 84svh * var(--ar)); aspect-ratio: var(--ar); overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 16%); mask-image: linear-gradient(transparent, #000 16%); }
 .hero__copy { position: relative; z-index: 2; }
 .hero__title { text-shadow: 0 2px 30px rgba(3, 20, 26, .55); }
 /* геометрия и позиции сот считаются в home.mjs, здесь только вид */
@@ -184,9 +184,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hex--big img { transform-origin: 50% 85%; }
 .hex:hover img { transform: translate3d(var(--px, 0), var(--py, 0), 0) scale(1.16); }
 .hex::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(160deg, rgba(255, 255, 255, .16), transparent 38%), linear-gradient(transparent 60%, rgba(3, 20, 26, .3)); }
-.hex--cta { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 1.6cqi; padding: 0 5cqi 0 0; background: linear-gradient(140deg, #e6c891, var(--brass) 45%, var(--brass-2)); color: #23180a; font-size: 2.5cqi; font-weight: 700; line-height: 1.25; letter-spacing: .12em; text-transform: uppercase; text-align: right; transition: filter .35s; }
+.hex--cta { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 1.2cqi; padding: 0 3.4cqi 0 0; background: linear-gradient(140deg, #e6c891, var(--brass) 45%, var(--brass-2)); color: #23180a; font-size: 1.75cqi; font-weight: 700; line-height: 1.25; letter-spacing: .1em; text-transform: uppercase; text-align: right; transition: filter .35s; }
 .hex--cta::after { content: none; }
-.hex--cta svg { width: 3.6cqi; height: 3.6cqi; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s var(--ease); }
+.hex--cta svg { width: 2.6cqi; height: 2.6cqi; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s var(--ease); }
 .hex--cta:hover { filter: brightness(1.1); }
 .hex--cta:hover svg { transform: translateX(4px); }
 .hex--cta:focus-visible { outline: none; background: var(--aqua); }
